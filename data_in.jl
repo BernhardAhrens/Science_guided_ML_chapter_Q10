@@ -1,4 +1,4 @@
-cd("C:/Users/bahrens/OneDrive/Projects/POCMOCML/Science_guided_ML_chapter_Q10")
+cd("/User/homes/bahrens/Science_guided_ML_chapter_Q10/Synthetic4BookChap.csv")
 
 # load Project.toml and install packages
 using Pkg; Pkg.activate("."); Pkg.instantiate()
@@ -108,6 +108,7 @@ loss_L2(p_ini)
 
 function test_training(Q10_ini,maxiters = 100,n_ini = 3)
   Q10_array = Array{Union{Missing,Float32}}(missings(maxiters+1,n_ini))
+
   for i in 1:n_ini
     println("$(i) of $(n_ini)")
     losses = []
@@ -121,6 +122,7 @@ function test_training(Q10_ini,maxiters = 100,n_ini = 3)
       end
       false
     end
+
     p_NN_random = Float32.(Flux.glorot_uniform(length(initial_params(NN))))
     p_ini = [Float32(Q10_ini);p_NN_random]
 
