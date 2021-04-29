@@ -1,4 +1,4 @@
-cd("C:/Users/bahrens/OneDrive/Projects/POCMOCML/book_chapter")
+cd("C:/Users/bahrens/OneDrive/Projects/POCMOCML/Science_guided_ML_chapter_Q10")
 
 # load Project.toml and install packages
 using Pkg; Pkg.activate("."); Pkg.instantiate()
@@ -52,6 +52,8 @@ x_Rb_woTA = Array(x_dfk)'
 
 x_Rb_woTA = Float32.(Flux.normalise(x_Rb_woTA))
 
+plot(x_Rb_woTA')
+
 x_dfk = @linq dfall |> 
   select(
     :TA,
@@ -60,11 +62,13 @@ x_dfk = @linq dfall |>
 x_Rb_wiTA = Array(x_dfk)'
 x_Rb_wiTA = Float32.(Flux.normalise(x_Rb_wiTA))
 
+plot(x_Rb_wiTA')
 
+# example run with random NN
 NN = FastChain(FastDense(size(x_Rb_wiTA,1), 16, tanh),FastDense(16, 16, tanh),FastDense(16, 1,x->x^2))
 p_NN_random = Float32.(initial_params(NN))
 
-Rb_NN_random = NN(x_Rb_woTA,p_NN_random)
+Rb_NN_random = NN(x_Rb_wiTA,p_NN_random)
 
 plot(Rb_NN_random')
 
@@ -81,7 +85,7 @@ end
 
 p_ini = [Float32(1.0);p_NN_random]
 
-Reco_random = fR(Float32.(dfall.TA),x_Rb_woTA;p = p_ini)
+Reco_random = fR(Float32.(dfall.TA),x_Rb_wiTA;p = p_ini)
 
 plot(dfall.DateTime,dfall.RECO_syn)
 plot!(dfall.DateTime,Reco_random)
@@ -89,7 +93,7 @@ plot!(dfall.DateTime,Reco_random)
 L2(x) = sum(abs2, x)/length(x)
 
 θ = p_ini
-x_Rb = x_Rb_woTA
+x_Rb = x_Rb_wiTA
 function loss_simple(θ)
     mod = fR(Float32.(dfall.TA),x_Rb;p = θ)
     cost = Flux.mse(mod,Float32.(dfall.RECO_syn))
@@ -100,9 +104,9 @@ function loss_L2(θ)
   mod = fR(Float32.(dfall.TA),x_Rb;p = θ)
   Flux.mse(mod,Float32.(dfall.RECO_syn)) + L2(θ[2:end])
 end
-loss_L2(p_ini,x_Rb_woTA)
+loss_L2(p_ini)
 
-function test_training(Q10_ini,maxiters = 200,n_ini = 3)
+function test_training(Q10_ini,maxiters = 100,n_ini = 3)
   Q10_array = Array{Union{Missing,Float32}}(missings(maxiters+1,n_ini))
   for i in 1:n_ini
     println("$(i) of $(n_ini)")
@@ -126,6 +130,7 @@ function test_training(Q10_ini,maxiters = 200,n_ini = 3)
   Q10_array
 end
 
+# without TA in NN
 x_Rb = x_Rb_woTA
 NN = FastChain(FastDense(size(x_Rb,1), 16, tanh),FastDense(16, 16, tanh),FastDense(16, 1,x->x^2))
 Q10_05 = test_training(0.5)
@@ -138,6 +143,7 @@ p1 = plot(Q10_05, colour = "blue", labels = "", title = "wo TA in NN")
 plot!(Q10_15, colour = "red", labels = "")
 plot!(Q10_25, colour = "violet", labels = "")
 
+# with TA in NN
 x_Rb = x_Rb_wiTA
 NN = FastChain(FastDense(size(x_Rb,1), 16, tanh),FastDense(16, 16, tanh),FastDense(16, 1,x->x^2))
 Q10_05_wTA = test_training(0.5)
@@ -148,8 +154,8 @@ p2 = plot(Q10_05_wTA, colour = "blue", labels = "", title = "wi TA in NN")
 plot!(Q10_15_wTA, colour = "red", labels = "")
 plot!(Q10_25_wTA, colour = "violet", labels = "")
 
-
-function test_training_L2(Q10_ini,maxiters = 200,n_ini = 3)
+# definition L2 training
+function test_training_L2(Q10_ini,maxiters = 100,n_ini = 3)
   Q10_array = Array{Union{Missing,Float32}}(missings(maxiters+1,n_ini))
   for i in 1:n_ini
     println("$(i) of $(n_ini)")
